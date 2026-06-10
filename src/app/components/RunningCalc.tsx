@@ -179,7 +179,7 @@ export function RunningCalc() {
             PACE
           </div>
           <div style={{ fontSize: "11px", color: "#A0A0A0", letterSpacing: "3px", marginTop: "4px", textTransform: "uppercase" }}>
-            Running Calculator
+            Pace Calculator
           </div>
         </div>
 
