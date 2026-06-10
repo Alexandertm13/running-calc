@@ -215,7 +215,7 @@ export function RunningCalc() {
                   color: mode === m ? "#111111" : "#A0A0A0",
                 }}
               >
-                {m === "pace" ? "Найти темп" : "Найти время"}
+                {m === "pace" ? "По темпу" : "По времени"}
               </button>
             ))}
           </div>
