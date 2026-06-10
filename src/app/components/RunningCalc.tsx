@@ -26,31 +26,25 @@ function formatPace(secsPerKm: number) {
   return `${pad(m)}:${pad(s)}`;
 }
 
-// --- ОБНОВЛЕННАЯ ЛОГИКА: все отсечки строго в метрах ---
-function buildSplits(distanceM: number, paceSecPerKm: number): Split[] {
+// --- ОБНОВЛЕННАЯ ЛОГИКА: шаг отсечек теперь передается параметром ---
+function buildSplits(distanceM: number, paceSecPerKm: number, step: number): Split[] {
   const splits: Split[] = [];
-  const step = 200; // Шаг 200 метров
   const totalSteps = Math.floor(distanceM / step);
 
-  // Генерируем отсечки каждые 200 метров
   for (let i = 1; i <= totalSteps; i++) {
     const distAtSplit = i * step;
     const timeAtSplit = (distAtSplit / 1000) * paceSecPerKm;
-    
-    // ВСЕГДА выводим в метрах
     splits.push({ label: `${distAtSplit} м`, time: formatTime(timeAtSplit) });
   }
 
-  // Добавляем финальную отсечку, если остался остаток
   const remainder = distanceM % step;
   if (remainder > 0) {
     splits.push({
-      label: `${distanceM} м`, // Финальная точка тоже в метрах
+      label: `${distanceM} м`,
       time: formatTime((distanceM / 1000) * paceSecPerKm),
       isFinal: true,
     });
   } else if (totalSteps > 0) {
-    // Если дистанция ровно кратна 200м, помечаем последнюю как финальную
     splits[splits.length - 1].isFinal = true;
   }
 
@@ -66,6 +60,7 @@ export function RunningCalc() {
   const [seconds, setSeconds] = useState("");
   const [paceMin, setPaceMin] = useState("");
   const [paceSec, setPaceSec] = useState("");
+  const [splitStep, setSplitStep] = useState<number>(200); // Новое состояние для шага
   
   const [result, setResult] = useState<{ label: string; value: string } | null>(null);
   const [splits, setSplits] = useState<Split[]>([]);
@@ -95,7 +90,7 @@ export function RunningCalc() {
       
       const paceSecPerKm = (totalSec / dist) * 1000;
       setResult({ label: "Ваш темп", value: formatPace(paceSecPerKm) + " /км" });
-      setSplits(buildSplits(dist, paceSecPerKm));
+      setSplits(buildSplits(dist, paceSecPerKm, splitStep)); // Передаем выбранный шаг
     } else {
       const ps = (parseInt(paceMin) || 0) * 60 + (parseInt(paceSec) || 0);
       if (ps <= 0) {
@@ -104,7 +99,7 @@ export function RunningCalc() {
       }
       const totalSec = (dist / 1000) * ps;
       setResult({ label: "Финишное время", value: formatTime(totalSec) });
-      setSplits(buildSplits(dist, ps));
+      setSplits(buildSplits(dist, ps, splitStep)); // Передаем выбранный шаг
     }
   }
 
@@ -112,7 +107,6 @@ export function RunningCalc() {
   const goldDim = "rgba(201,168,76,0.15)";
   const goldBorder = "rgba(201,168,76,0.3)";
   
-  // Оптимизированные стили для мобильных устройств (16px предотвращает зум на iPhone)
   const inputStyle = {
     backgroundColor: "#222222",
     border: `1px solid ${goldBorder}`,
@@ -122,10 +116,12 @@ export function RunningCalc() {
     width: "100%",
     outline: "none",
     fontFamily: "'JetBrains Mono', monospace",
-    fontSize: "16px", 
+    fontSize: "16px",
     fontVariantNumeric: "tabular-nums",
     transition: "border-color 0.2s",
   } as const;
+
+  const stepOptions = [100, 200, 400, 1000];
 
   return (
     <div
@@ -194,23 +190,14 @@ export function RunningCalc() {
           }}
         >
           {/* Переключатель режима */}
-          <div
-            className="flex mb-4"
-            style={{ backgroundColor: "#111111", borderRadius: "10px", padding: "3px", border: `1px solid ${goldBorder}` }}
-          >
+          <div className="flex mb-4" style={{ backgroundColor: "#111111", borderRadius: "10px", padding: "3px", border: `1px solid ${goldBorder}` }}>
             {(["pace", "time"] as Mode[]).map((m) => (
               <button
                 key={m}
                 onClick={() => { setMode(m); setResult(null); setSplits([]); setError(""); }}
                 style={{
-                  flex: 1,
-                  padding: "8px 0",
-                  borderRadius: "8px",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  transition: "all 0.2s",
+                  flex: 1, padding: "8px 0", borderRadius: "8px", border: "none", cursor: "pointer",
+                  fontSize: "13px", fontWeight: 700, transition: "all 0.2s",
                   backgroundColor: mode === m ? gold : "transparent",
                   color: mode === m ? "#111111" : "#A0A0A0",
                 }}
@@ -225,38 +212,16 @@ export function RunningCalc() {
             <label style={{ display: "block", color: "#A0A0A0", fontSize: "11px", letterSpacing: "1.5px", marginBottom: "6px", textTransform: "uppercase" }}>
               Дистанция (метры)
             </label>
-            <input
-              type="number"
-              inputMode="numeric"
-              placeholder="10000"
-              value={distance}
-              onChange={(e) => setDistance(e.target.value)}
-              style={inputStyle}
-              onFocus={(e) => (e.target.style.borderColor = gold)}
-              onBlur={(e) => (e.target.style.borderColor = goldBorder)}
-            />
+            <input type="number" inputMode="numeric" placeholder="10000" value={distance} onChange={(e) => setDistance(e.target.value)} style={inputStyle} onFocus={(e) => (e.target.style.borderColor = gold)} onBlur={(e) => (e.target.style.borderColor = goldBorder)} />
           </div>
 
           {/* Время */}
           {mode === "pace" && (
             <div className="mb-4">
-              <label style={{ display: "block", color: "#A0A0A0", fontSize: "11px", letterSpacing: "1.5px", marginBottom: "6px", textTransform: "uppercase" }}>
-                Время финиша
-              </label>
+              <label style={{ display: "block", color: "#A0A0A0", fontSize: "11px", letterSpacing: "1.5px", marginBottom: "6px", textTransform: "uppercase" }}>Время финиша</label>
               <div className="flex gap-2">
                 {[{ val: hours, set: setHours, ph: "чч" }, { val: minutes, set: setMinutes, ph: "мм" }, { val: seconds, set: setSeconds, ph: "сс" }].map(({ val, set, ph }) => (
-                  <input
-                    key={ph}
-                    type="number"
-                    inputMode="numeric"
-                    placeholder={ph}
-                    min={0}
-                    value={val}
-                    onChange={(e) => set(e.target.value)}
-                    style={{ ...inputStyle, textAlign: "center" }}
-                    onFocus={(e) => (e.target.style.borderColor = gold)}
-                    onBlur={(e) => (e.target.style.borderColor = goldBorder)}
-                  />
+                  <input key={ph} type="number" inputMode="numeric" placeholder={ph} min={0} value={val} onChange={(e) => set(e.target.value)} style={{ ...inputStyle, textAlign: "center" }} onFocus={(e) => (e.target.style.borderColor = gold)} onBlur={(e) => (e.target.style.borderColor = goldBorder)} />
                 ))}
               </div>
             </div>
@@ -265,46 +230,48 @@ export function RunningCalc() {
           {/* Темп */}
           {mode === "time" && (
             <div className="mb-4">
-              <label style={{ display: "block", color: "#A0A0A0", fontSize: "11px", letterSpacing: "1.5px", marginBottom: "6px", textTransform: "uppercase" }}>
-                Темп (мин/км)
-              </label>
+              <label style={{ display: "block", color: "#A0A0A0", fontSize: "11px", letterSpacing: "1.5px", marginBottom: "6px", textTransform: "uppercase" }}>Темп (мин/км)</label>
               <div className="flex gap-2">
                 {[{ val: paceMin, set: setPaceMin, ph: "мин" }, { val: paceSec, set: setPaceSec, ph: "сек" }].map(({ val, set, ph }) => (
-                  <input
-                    key={ph}
-                    type="number"
-                    inputMode="numeric"
-                    placeholder={ph}
-                    min={0}
-                    value={val}
-                    onChange={(e) => set(e.target.value)}
-                    style={{ ...inputStyle, textAlign: "center" }}
-                    onFocus={(e) => (e.target.style.borderColor = gold)}
-                    onBlur={(e) => (e.target.style.borderColor = goldBorder)}
-                  />
+                  <input key={ph} type="number" inputMode="numeric" placeholder={ph} min={0} value={val} onChange={(e) => set(e.target.value)} style={{ ...inputStyle, textAlign: "center" }} onFocus={(e) => (e.target.style.borderColor = gold)} onBlur={(e) => (e.target.style.borderColor = goldBorder)} />
                 ))}
               </div>
             </div>
           )}
 
+          {/* --- НОВЫЙ БЛОК: Выбор шага отсечек --- */}
+          <div className="mb-4">
+            <label style={{ display: "block", color: "#A0A0A0", fontSize: "11px", letterSpacing: "1.5px", marginBottom: "6px", textTransform: "uppercase" }}>
+              Шаг отсечек (м)
+            </label>
+            <div className="flex gap-2">
+              {stepOptions.map((step) => (
+                <button
+                  key={step}
+                  onClick={() => setSplitStep(step)}
+                  style={{
+                    flex: 1,
+                    padding: "9px 0",
+                    borderRadius: "8px",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                    fontWeight: 700,
+                    transition: "all 0.2s",
+                    backgroundColor: splitStep === step ? gold : "#222222",
+                    color: splitStep === step ? "#111111" : "#A0A0A0",
+                    border: splitStep === step ? "none" : `1px solid ${goldBorder}`,
+                  }}
+                >
+                  {step}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* ---------------------------------------- */}
+
           {/* Кнопка */}
-          <button
-            onClick={calculate}
-            className="w-full active:scale-[0.98] transition-transform"
-            style={{
-              height: "48px",
-              backgroundColor: gold,
-              color: "#111111",
-              borderRadius: "10px",
-              border: "none",
-              fontSize: "15px",
-              fontWeight: 800,
-              letterSpacing: "1px",
-              textTransform: "uppercase",
-              cursor: "pointer",
-              boxShadow: `0 4px 15px rgba(201,168,76,0.3)`,
-            }}
-          >
+          <button onClick={calculate} className="w-full active:scale-[0.98] transition-transform" style={{ height: "48px", backgroundColor: gold, color: "#111111", borderRadius: "10px", border: "none", fontSize: "15px", fontWeight: 800, letterSpacing: "1px", textTransform: "uppercase", cursor: "pointer", boxShadow: `0 4px 15px rgba(201,168,76,0.3)` }}>
             Рассчитать
           </button>
 
@@ -316,72 +283,29 @@ export function RunningCalc() {
           )}
         </div>
 
-        {/* Таблица отсечек (БЕЗ СКРОЛЛА, идет первой) */}
+        {/* Таблица отсечек */}
         {splits.length > 0 && (
-          <div
-            className="mt-4"
-            style={{
-              backgroundColor: "#1A1A1A",
-              border: `1px solid ${goldBorder}`,
-              borderRadius: "16px",
-              overflow: "hidden",
-            }}
-          >
+          <div className="mt-4" style={{ backgroundColor: "#1A1A1A", border: `1px solid ${goldBorder}`, borderRadius: "16px", overflow: "hidden" }}>
             <div className="flex justify-between px-4 py-2.5" style={{ borderBottom: `1px solid ${goldBorder}` }}>
               <span style={{ fontSize: "11px", color: "#A0A0A0", letterSpacing: "1.5px", textTransform: "uppercase" }}>Отсечка</span>
               <span style={{ fontSize: "11px", color: "#A0A0A0", letterSpacing: "1.5px", textTransform: "uppercase" }}>Время</span>
             </div>
             <div>
               {splits.map((s, i) => (
-                <div
-                  key={i}
-                  className="flex justify-between px-4 py-2.5"
-                  style={{
-                    borderBottom: i < splits.length - 1 ? `1px solid ${goldBorder}` : "none",
-                    backgroundColor: s.isFinal ? goldDim : "transparent",
-                  }}
-                >
-                  <span style={{ fontSize: "14px", color: s.isFinal ? gold : "#D0D0D0", fontWeight: s.isFinal ? 700 : 400 }}>
-                    {s.label}
-                  </span>
-                  <span style={{ fontSize: "14px", color: s.isFinal ? gold : "#D0D0D0", fontWeight: s.isFinal ? 700 : 400, fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: "tabular-nums" }}>
-                    {s.time}
-                  </span>
+                <div key={i} className="flex justify-between px-4 py-2.5" style={{ borderBottom: i < splits.length - 1 ? `1px solid ${goldBorder}` : "none", backgroundColor: s.isFinal ? goldDim : "transparent" }}>
+                  <span style={{ fontSize: "14px", color: s.isFinal ? gold : "#D0D0D0", fontWeight: s.isFinal ? 700 : 400 }}>{s.label}</span>
+                  <span style={{ fontSize: "14px", color: s.isFinal ? gold : "#D0D0D0", fontWeight: s.isFinal ? 700 : 400, fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: "tabular-nums" }}>{s.time}</span>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Итоговый результат (ПЕРЕНЕСЕН ВНИЗ) */}
+        {/* Итоговый результат */}
         {result && (
-          <div
-            className="mt-4"
-            style={{
-              backgroundColor: "#1A1A1A",
-              border: `1.5px solid ${gold}`,
-              borderRadius: "16px",
-              padding: "16px 20px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              boxShadow: `0 4px 20px rgba(201,168,76,0.15)`,
-            }}
-          >
-            <div style={{ fontSize: "12px", color: "#A0A0A0", letterSpacing: "1.5px", textTransform: "uppercase" }}>
-              {result.label}
-            </div>
-            <div
-              style={{
-                fontSize: "28px",
-                fontWeight: 800,
-                color: gold,
-                fontFamily: "'JetBrains Mono', monospace",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              {result.value}
-            </div>
+          <div className="mt-4" style={{ backgroundColor: "#1A1A1A", border: `1.5px solid ${gold}`, borderRadius: "16px", padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: `0 4px 20px rgba(201,168,76,0.15)` }}>
+            <div style={{ fontSize: "12px", color: "#A0A0A0", letterSpacing: "1.5px", textTransform: "uppercase" }}>{result.label}</div>
+            <div style={{ fontSize: "28px", fontWeight: 800, color: gold, fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: "tabular-nums" }}>{result.value}</div>
           </div>
         )}
       </div>
