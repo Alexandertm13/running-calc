@@ -176,7 +176,7 @@ export function RunningCalc() {
             </div>
           </div>
           <div style={{ fontSize: "32px", fontWeight: 800, color: gold, letterSpacing: "-1px", lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
-            PACE
+            LOOP
           </div>
           <div style={{ fontSize: "11px", color: "#A0A0A0", letterSpacing: "3px", marginTop: "4px", textTransform: "uppercase" }}>
             Pace Calculator
