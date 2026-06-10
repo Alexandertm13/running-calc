@@ -242,7 +242,7 @@ export function RunningCalc() {
           {/* --- НОВЫЙ БЛОК: Выбор шага отсечек --- */}
           <div className="mb-4">
             <label style={{ display: "block", color: "#A0A0A0", fontSize: "11px", letterSpacing: "1.5px", marginBottom: "6px", textTransform: "uppercase" }}>
-              Шаг отсечек (м)
+              Круг (м)
             </label>
             <div className="flex gap-2">
               {stepOptions.map((step) => (
