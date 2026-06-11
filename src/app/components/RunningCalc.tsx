@@ -198,34 +198,48 @@ export function RunningCalc() {
         })}
       </svg>
 
-      <div className="w-full relative z-10 pb-8" style={{ maxWidth: "380px" }}>
-        <div className="text-center mb-6">
-          <div className="flex justify-center mb-2">
+        <div className="w-full relative z-10" style={{ maxWidth: "400px" }}>
+        {/* Заголовок */}
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-4 mb-1">
+            {/* Овальный трек — иконка стадиона */}
+            <svg width="40" height="52" viewBox="0 0 40 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Поле */}
+              <rect x="2" y="2" width="36" height="48" rx="16" fill="#ffffff" />
+              {/* Внешняя дорожка */}
+              <rect x="2" y="2" width="36" height="48" rx="16" fill="none" stroke="#111111" strokeWidth="2.5" />
+              {/* Дорожка 2 */}
+              <rect x="6" y="6" width="28" height="40" rx="12" fill="none" stroke="#111111" strokeWidth="1.2" />
+              {/* Дорожка 3 */}
+              <rect x="10" y="10" width="20" height="32" rx="9" fill="none" stroke="#111111" strokeWidth="1" />
+              {/* Центральный газон */}
+              <rect x="13" y="14" width="14" height="24" rx="6" fill="#1A1A1A" />
+              {/* Финишная черта */}
+              <line x1="2" y1="26" x2="38" y2="26" stroke="#111111" strokeWidth="1" strokeDasharray="3 3" />
+            </svg>
+
             <div
               style={{
-                width: "56px",
-                height: "56px",
-                borderRadius: "50%",
-                backgroundColor: "#1A1A1A",
-                border: `2px solid ${gold}`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: `0 0 20px rgba(201,168,76,0.3)`,
-                overflow: "hidden",
+                fontSize: "38px",
+                fontWeight: 800,
+                color: gold,
+                letterSpacing: "-1px",
+                lineHeight: 1,
+                fontFamily: "'JetBrains Mono', monospace",
               }}
             >
-              <img
-                src="https://images.unsplash.com/photo-1563248223-2b6a8648d2d3?w=144&h=144&fit=crop&auto=format"
-                alt="Стадион"
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
+              LOOP
             </div>
           </div>
-          <div style={{ fontSize: "32px", fontWeight: 800, color: gold, letterSpacing: "-1px", lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
-            LOOP
-          </div>
-          <div style={{ fontSize: "11px", color: "#A0A0A0", letterSpacing: "3px", marginTop: "4px", textTransform: "uppercase" }}>
+          <div
+            style={{
+              fontSize: "13px",
+              color: "#A0A0A0",
+              letterSpacing: "4px",
+              marginTop: "6px",
+              textTransform: "uppercase",
+            }}
+          >
             Pace Calculator
           </div>
         </div>
