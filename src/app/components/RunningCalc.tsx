@@ -113,7 +113,7 @@ export function RunningCalc() {
       
       calculatedPaceSecPerKm = (totalSec / dist) * 1000;
       setResult({ 
-        label: "Ваш темп", 
+        label: "Темп", 
         value: formatPace(calculatedPaceSecPerKm) + " /км" 
       });
       setSplits(buildSplits(dist, calculatedPaceSecPerKm, splitStep));
@@ -148,7 +148,7 @@ export function RunningCalc() {
       const finishTimeSec = (dist / 1000) * calculatedPaceSecPerKm;
       
       setResult({ 
-        label: "Финиш", 
+        label: "Финишное время", 
         value: formatTime(finishTimeSec),
         pace: formatPace(calculatedPaceSecPerKm) + " /км"
       });
