@@ -26,9 +26,31 @@ function formatPace(secsPerKm: number) {
   return `${pad(m)}:${pad(s)}`;
 }
 
+function getLapsText(laps: number): string {
+  const text = laps % 1 === 0 ? String(laps) : laps.toFixed(1).replace('.', ',');
+  const intPart = Math.floor(laps);
+  const n = intPart % 100;
+  const n1 = n % 10;
+  
+  let suffix = "кругов";
+  if (n > 10 && n < 20) {
+    suffix = "кругов";
+  } else if (n1 > 1 && n1 < 5) {
+    suffix = "круга";
+  } else if (n1 === 1) {
+    suffix = "круг";
+  }
+  
+  // Специальное правило для дробных чисел, оканчивающихся на 1.5, 21.5 и т.д. (полтора круга)
+  if (laps % 1 !== 0 && n1 === 1 && n !== 11) {
+    suffix = "круга";
+  }
+  
+  return `${text} ${suffix}`;
+}
+
 function buildSplits(distanceM: number, paceSecPerKm: number, step: number): Split[] {
   const splits: Split[] = [];
-  
   if (step >= distanceM) {
     splits.push({
       label: `${distanceM} м`,
@@ -37,17 +59,15 @@ function buildSplits(distanceM: number, paceSecPerKm: number, step: number): Spl
     });
     return splits;
   }
-
   const totalSteps = Math.floor(distanceM / step);
   for (let i = 1; i <= totalSteps; i++) {
     const distAtSplit = i * step;
     const timeAtSplit = (distAtSplit / 1000) * paceSecPerKm;
-    splits.push({ 
-      label: `${distAtSplit} м`, 
+    splits.push({
+      label: `${distAtSplit} м`,
       time: formatTime(timeAtSplit)
     });
   }
-  
   const remainder = distanceM % step;
   if (remainder > 0) {
     splits.push({
@@ -63,27 +83,23 @@ function buildSplits(distanceM: number, paceSecPerKm: number, step: number): Spl
 
 export function RunningCalc() {
   const [mode, setMode] = useState<Mode>("pace");
-  
   // Общие поля
   const [distance, setDistance] = useState("");
-  const [splitStep, setSplitStep] = useState<number>(200); 
-  
+  const [splitStep, setSplitStep] = useState<number>(200);
   // Поля для режима "По времени"
   const [hours, setHours] = useState("");
   const [minutes, setMinutes] = useState("");
   const [seconds, setSeconds] = useState("");
-  
   // Поля для режима "По темпу"
   const [paceMin, setPaceMin] = useState("");
   const [paceSec, setPaceSec] = useState("");
-
   // Поля для режима "Круг"
   const [circleMin, setCircleMin] = useState("");
   const [circleSec, setCircleSec] = useState("");
   const [circleMs, setCircleMs] = useState("");
   const [circleDist, setCircleDist] = useState("400");
-
-  const [result, setResult] = useState<{ label: string; value: string; pace?: string } | null>(null);
+  
+  const [result, setResult] = useState<{ label: string; value: string; pace?: string; laps?: string } | null>(null);
   const [splits, setSplits] = useState<Split[]>([]);
   const [error, setError] = useState("");
 
@@ -91,10 +107,9 @@ export function RunningCalc() {
     setError("");
     setResult(null);
     setSplits([]);
-    
     const dist = parseFloat(distance);
     if (!dist || dist <= 0) {
-      setError("Введите дистанцию");
+      setError("Введите дистанцию ");
       return;
     }
 
@@ -107,27 +122,27 @@ export function RunningCalc() {
         (parseInt(seconds) || 0);
         
       if (totalSec <= 0) {
-        setError("Введите время");
+        setError("Введите время ");
         return;
       }
       
       calculatedPaceSecPerKm = (totalSec / dist) * 1000;
       setResult({ 
-        label: "Темп", 
-        value: formatPace(calculatedPaceSecPerKm) + " /км" 
+        label: "Темп ", 
+        value: formatPace(calculatedPaceSecPerKm) + " /км " 
       });
       setSplits(buildSplits(dist, calculatedPaceSecPerKm, splitStep));
       
     } else if (mode === "time") {
       const ps = (parseInt(paceMin) || 0) * 60 + (parseInt(paceSec) || 0);
       if (ps <= 0) {
-        setError("Введите темп");
+        setError("Введите темп ");
         return;
       }
       calculatedPaceSecPerKm = ps;
       const totalSec = (dist / 1000) * ps;
       setResult({ 
-        label: "Финишное время", 
+        label: "Финишное время ", 
         value: formatTime(totalSec) 
       });
       setSplits(buildSplits(dist, calculatedPaceSecPerKm, splitStep));
@@ -137,20 +152,22 @@ export function RunningCalc() {
       const circleTotalSec = 
         (parseInt(circleMin) || 0) * 60 + 
         (parseInt(circleSec) || 0) + 
-        (parseInt(circleMs) || 0) / 1000;
+        (parseInt(circleMs) || 0) / 1000 ;
         
       if (circleTotalSec <= 0) {
-        setError("Введите время круга");
+        setError("Введите время круга ");
         return;
       }
 
       calculatedPaceSecPerKm = (circleTotalSec / (cDist / 1000));
       const finishTimeSec = (dist / 1000) * calculatedPaceSecPerKm;
+      const laps = dist / cDist;
       
       setResult({ 
-        label: "Финишное время", 
+        label: "Финишное время ", 
         value: formatTime(finishTimeSec),
-        pace: formatPace(calculatedPaceSecPerKm) + " /км"
+        pace: formatPace(calculatedPaceSecPerKm) + " /км ",
+        laps: getLapsText(laps)
       });
       setSplits(buildSplits(dist, calculatedPaceSecPerKm, splitStep));
     }
@@ -159,7 +176,6 @@ export function RunningCalc() {
   const gold = "#C9A84C";
   const goldDim = "rgba(201,168,76,0.15)";
   const goldBorder = "rgba(201,168,76,0.3)";
-  
   const inputStyle = {
     backgroundColor: "#222222",
     border: `1px solid ${goldBorder}`,
@@ -173,21 +189,12 @@ export function RunningCalc() {
     fontVariantNumeric: "tabular-nums",
     transition: "border-color 0.2s",
   } as const;
-
+  
   const stepOptions = [100, 200, 400, 1000];
 
   return (
-    <div
-      className="min-h-screen flex items-start justify-center p-3 relative overflow-y-auto"
-      style={{ backgroundColor: "#0D0D0D" }}
-    >
-      <svg
-        className="absolute inset-0 w-full h-full pointer-events-none"
-        xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="xMidYMid slice"
-        viewBox="0 0 800 600"
-        style={{ opacity: 0.15 }}
-      >
+    <div className="min-h-screen flex items-start justify-center p-3 relative overflow-y-auto" style={{ backgroundColor: "#0D0D0D" }}>
+      <svg className="absolute inset-0 w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" viewBox="0 0 800 600" style={{ opacity: 0.15 }}>
         {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => {
           const r = 60 + i * 52;
           return <ellipse key={`tl-${i}`} cx="160" cy="120" rx={r} ry={r * 0.55} fill="none" stroke="#C9A84C" strokeWidth={i % 3 === 0 ? "1.4" : "0.7"} />;
@@ -197,62 +204,31 @@ export function RunningCalc() {
           return <ellipse key={`br-${i}`} cx="640" cy="480" rx={r} ry={r * 0.6} fill="none" stroke="#C9A84C" strokeWidth={i % 3 === 0 ? "1.4" : "0.7"} />;
         })}
       </svg>
-
-        <div className="w-full relative z-10" style={{ maxWidth: "400px" }}>
+      
+      <div className="w-full relative z-10" style={{ maxWidth: "400px" }}>
         {/* Заголовок */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-4 mb-1">
             {/* Овальный трек — иконка стадиона */}
             <svg width="40" height="52" viewBox="0 0 40 52" fill="none" xmlns="http://www.w3.org/2000/svg">
-              {/* Поле */}
               <rect x="2" y="2" width="36" height="48" rx="16" fill="#ffffff" />
-              {/* Внешняя дорожка */}
               <rect x="2" y="2" width="36" height="48" rx="16" fill="none" stroke="#111111" strokeWidth="2.5" />
-              {/* Дорожка 2 */}
               <rect x="6" y="6" width="28" height="40" rx="12" fill="none" stroke="#111111" strokeWidth="1.2" />
-              {/* Дорожка 3 */}
               <rect x="10" y="10" width="20" height="32" rx="9" fill="none" stroke="#111111" strokeWidth="1" />
-              {/* Центральный газон */}
               <rect x="13" y="14" width="14" height="24" rx="6" fill="#1A1A1A" />
-              {/* Финишная черта */}
               <line x1="2" y1="26" x2="38" y2="26" stroke="#111111" strokeWidth="1" strokeDasharray="3 3" />
             </svg>
 
-            <div
-              style={{
-                fontSize: "38px",
-                fontWeight: 800,
-                color: gold,
-                letterSpacing: "-1px",
-                lineHeight: 1,
-                fontFamily: "'JetBrains Mono', monospace",
-              }}
-            >
+            <div style={{ fontSize: "38px", fontWeight: 800, color: gold, letterSpacing: "-1px", lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
               LOOP
             </div>
           </div>
-          <div
-            style={{
-              fontSize: "13px",
-              color: "#A0A0A0",
-              letterSpacing: "4px",
-              marginTop: "6px",
-              textTransform: "uppercase",
-            }}
-          >
+          <div style={{ fontSize: "13px", color: "#A0A0A0", letterSpacing: "4px", marginTop: "6px", textTransform: "uppercase" }}>
             Pace Calculator
           </div>
         </div>
 
-        <div
-          style={{
-            backgroundColor: "#1A1A1A",
-            border: `1px solid ${goldBorder}`,
-            borderRadius: "16px",
-            padding: "20px",
-            boxShadow: `0 8px 30px rgba(0,0,0,0.5)`,
-          }}
-        >
+        <div style={{ backgroundColor: "#1A1A1A", border: `1px solid ${goldBorder}`, borderRadius: "16px", padding: "20px", boxShadow: `0 8px 30px rgba(0,0,0,0.5)` }}>
           <div className="flex mb-4" style={{ backgroundColor: "#111111", borderRadius: "10px", padding: "3px", border: `1px solid ${goldBorder}` }}>
             {(["pace", "time", "circle"] as Mode[]).map((m) => (
               <button
@@ -401,6 +377,17 @@ export function RunningCalc() {
                 <div style={{ fontSize: "16px", fontWeight: 600, color: "#F0D080", fontFamily: "'JetBrains Mono', monospace" }}>{result.pace}</div>
               )}
             </div>
+            
+            {result.laps && (
+              <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: `1px solid ${goldBorder}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: "12px", color: "#A0A0A0", letterSpacing: "1.5px", textTransform: "uppercase" }}>
+                  Всего кругов
+                </span>
+                <span style={{ fontSize: "18px", fontWeight: 700, color: "#F0D080", fontFamily: "'JetBrains Mono', monospace" }}>
+                  {result.laps}
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>
